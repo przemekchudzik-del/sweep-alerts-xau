@@ -228,7 +228,7 @@ def main():
     force_hour = os.environ.get("FORCE_HOUR")
 
     now_utc = datetime.now(timezone.utc)
-    if force_hour is not None:
+    if force_hour:
         now_utc = now_utc.replace(hour=int(force_hour), minute=0, second=0, microsecond=0)
 
     print(f"[{now_utc.isoformat()}] start, hour={now_utc.hour}, test_mode={test_mode}")
