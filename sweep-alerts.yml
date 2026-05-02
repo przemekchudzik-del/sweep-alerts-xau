@@ -1,0 +1,42 @@
+name: Sweep Alerts XAUUSD
+
+# Cron: co godzinę o pełnej godzinie (UTC).
+# Skrypt sam decyduje czy alert wysłać (tylko 07:00 UTC).
+on:
+  schedule:
+    - cron: '5 * * * *'   # 5 minut po pełnej godzinie (świeca już zamknięta)
+  workflow_dispatch:        # ręczne uruchomienie z UI GitHub
+    inputs:
+      test_mode:
+        description: 'Test mode (wyślij testowy alert)'
+        required: false
+        default: 'false'
+      force_hour:
+        description: 'Force hour UTC (puste = aktualna godzina)'
+        required: false
+        default: ''
+
+jobs:
+  check-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run sweep detection
+        env:
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TEST_MODE: ${{ github.event.inputs.test_mode == 'true' && '1' || '0' }}
+          FORCE_HOUR: ${{ github.event.inputs.force_hour }}
+        run: python sweep_alerts.py
