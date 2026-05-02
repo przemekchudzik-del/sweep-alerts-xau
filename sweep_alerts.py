@@ -170,7 +170,6 @@ def send_telegram(token, chat_id, text):
     r = requests.post(url, data={
         "chat_id": chat_id,
         "text": text,
-        "parse_mode": "Markdown",
         "disable_web_page_preview": True,
     }, timeout=15)
     if r.status_code != 200:
