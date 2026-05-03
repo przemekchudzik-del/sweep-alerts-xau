@@ -149,16 +149,30 @@ def build_trade_plan(sweep, current_price):
     prev_range = sweep["prev_high"] - sweep["prev_low"]
     if sweep["type"] == "UP":
         direction = "LONG"
-        sl = sweep["prev_low"]
+        # Wariant C: SL = entry - 1.5 * sweep_strength
+        sweep_strength = sweep["asian_extreme"] - sweep["prev_high"]
+        sl = current_price - 1.5 * sweep_strength
         tp = sweep["asian_extreme"] + TP_MULT * prev_range
         risk = current_price - sl
         reward = tp - current_price
     else:
         direction = "SHORT"
-        sl = sweep["prev_high"]
+        sweep_strength = sweep["prev_low"] - sweep["asian_extreme"]
+        sl = current_price + 1.5 * sweep_strength
         tp = sweep["asian_extreme"] - TP_MULT * prev_range
         risk = sl - current_price
         reward = current_price - tp
+
+    rr = reward / risk if risk > 0 else 0
+    return {
+        "direction": direction,
+        "entry": current_price,
+        "sl": sl,
+        "tp": tp,
+        "risk_per_unit": risk,
+        "reward_per_unit": reward,
+        "rr": rr,
+    }
 
     rr = reward / risk if risk > 0 else 0
     return {
