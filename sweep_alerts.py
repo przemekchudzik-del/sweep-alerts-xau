@@ -263,7 +263,7 @@ def process_instrument(inst, api_key, tg_token, tg_chat, now_utc, test_mode):
         print(f"  Test alert wyslany")
         return True
 
-    if not sweep or "type" not in sweep:
+  if not sweep or "type" not in sweep:
         print(f"  Brak sweepu: {sweep}")
         return True
 
@@ -273,6 +273,23 @@ def process_instrument(inst, api_key, tg_token, tg_chat, now_utc, test_mode):
 
     current = candles[-1]["close"]
     plan = build_trade_plan(sweep, current)
+
+    # Sanity check: jeśli R:R poniżej 0.3, cena już odpłynęła - nie handluj
+    if plan["rr"] < 0.3:
+        print(f"  Sweep wykryty, ale R:R={plan['rr']:.2f} - cena za daleko od entry, pomijam.")
+        return True
+
+    # Sanity check: czy cena jest sensownie blisko entry (nie przeleciała już w stronę TP)
+    if sweep["type"] == "UP":
+        # Cena nie może być już bliżej TP niż entry
+        progress_to_tp = (current - sweep["asian_extreme"]) / (plan["tp"] - sweep["asian_extreme"]) if plan["tp"] != sweep["asian_extreme"] else 0
+    else:
+        progress_to_tp = (sweep["asian_extreme"] - current) / (sweep["asian_extreme"] - plan["tp"]) if plan["tp"] != sweep["asian_extreme"] else 0
+
+    if progress_to_tp > 0.3:  # cena już zrobiła >30% drogi do TP
+        print(f"  Cena zaszła już {progress_to_tp*100:.0f}% drogi do TP - za późno, pomijam.")
+        return True
+
     msg = format_alert(inst, sweep, plan, current, now_utc)
     if send_telegram(tg_token, tg_chat, msg):
         print(f"  Alert {inst['name']} wyslany")
